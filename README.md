@@ -67,7 +67,18 @@ cd Transcribair
 python setup.py
 ```
 
-Then run:
+Then run using one of these methods:
+
+**Quick Start (Recommended):**
+```bash
+# Windows: Double-click run.bat or run:
+run.bat
+
+# Linux/macOS:
+./run.sh
+```
+
+**Or manually activate and run:**
 ```bash
 # Windows
 venv\Scripts\activate
