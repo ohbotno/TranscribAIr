@@ -8,7 +8,7 @@ from typing import Optional, Callable
 from pathlib import Path
 import threading
 
-from core.feedback import OrganizedFeedback, FeedbackOrganizer
+from core.feedback import OrganizedFeedback, StructuredFeedback, FeedbackOrganizer
 from core.export import FeedbackExporter
 from core.rubric import Rubric, RubricManager
 from core.settings import SettingsManager
@@ -77,6 +77,17 @@ class FeedbackPanel(ctk.CTkFrame):
         )
         self.organize_btn.pack(side="left", padx=2)
 
+        # Feedback mode selector
+        self.mode_var = ctk.StringVar(value="")
+        self.mode_dropdown = ctk.CTkOptionMenu(
+            button_container,
+            variable=self.mode_var,
+            values=["Organized", "Structured"],
+            width=110,
+            height=32
+        )
+        self.mode_dropdown.pack(side="left", padx=2)
+
         # Provider selection dropdown
         self.provider_var = ctk.StringVar(value="")
         self.provider_dropdown = ctk.CTkOptionMenu(
@@ -144,7 +155,7 @@ class FeedbackPanel(ctk.CTkFrame):
         self.transcript_toggle_btn.pack(pady=2)
 
     def _initialize_provider_dropdown(self):
-        """Initialize provider with settings default."""
+        """Initialize provider and mode with settings default."""
         settings = self.settings_manager.load_settings()
         provider_map = {
             "ollama": "Ollama",
@@ -155,6 +166,14 @@ class FeedbackPanel(ctk.CTkFrame):
         default_provider = provider_map.get(settings.llm.provider, "Ollama")
         self.provider_var.set(default_provider)
         self.selected_provider = settings.llm.provider
+
+        # Initialize mode selector
+        mode_map = {
+            "organized": "Organized",
+            "structured": "Structured"
+        }
+        default_mode = mode_map.get(settings.feedback.feedback_mode, "Organized")
+        self.mode_var.set(default_mode)
 
     def _on_provider_changed(self, choice: str):
         """Handle provider selection change."""
@@ -282,6 +301,10 @@ class FeedbackPanel(ctk.CTkFrame):
         if provider_name == "ollama":
             self._try_start_ollama()
 
+        # Determine mode (from dropdown or settings)
+        mode_map = {"Organized": "organized", "Structured": "structured"}
+        selected_mode = mode_map.get(self.mode_var.get(), "organized")
+
         # Disable button and show progress
         self.organize_btn.configure(state="disabled", text="Organizing...")
         self.feedback_text.configure(state="normal")
@@ -294,21 +317,31 @@ class FeedbackPanel(ctk.CTkFrame):
             try:
                 settings = self.settings_manager.load_settings()
 
-                # Organize feedback with selected provider
-                organized = self.feedback_organizer.organize_feedback(
-                    transcript=self.current_transcript,
-                    rubric=self.current_rubric,
-                    detail_level=settings.feedback.feedback_detail_level,
-                    provider_name=provider_name
-                )
+                # Choose between organized and structured feedback
+                if selected_mode == "structured":
+                    # Use structured feedback conversion
+                    result = self.feedback_organizer.organize_structured_feedback(
+                        transcript=self.current_transcript,
+                        rubric=self.current_rubric,
+                        instruction_prompt=settings.feedback.instruction_prompt,
+                        provider_name=provider_name
+                    )
+                else:
+                    # Use traditional organized feedback
+                    result = self.feedback_organizer.organize_feedback(
+                        transcript=self.current_transcript,
+                        rubric=self.current_rubric,
+                        detail_level=settings.feedback.feedback_detail_level,
+                        provider_name=provider_name
+                    )
 
-                if organized:
+                if result:
                     # Include raw transcript if setting is enabled
                     if not settings.feedback.include_raw_transcript:
-                        organized.raw_transcript = ""
+                        result.raw_transcript = ""
 
-                    self.current_feedback = organized
-                    self.after(0, lambda: self._display_feedback(organized))
+                    self.current_feedback = result
+                    self.after(0, lambda: self._display_feedback(result))
                 else:
                     error_msg = self._get_provider_error_message(provider_name)
                     self.after(0, lambda: self._show_error(error_msg))
@@ -537,11 +570,17 @@ class FeedbackPanel(ctk.CTkFrame):
         else:
             return f"❌ Failed to organize feedback.\n\n{exception_msg}"
 
-    def _display_feedback(self, feedback: OrganizedFeedback):
-        """Display organized feedback."""
+    def _display_feedback(self, feedback):
+        """Display organized or structured feedback."""
         self.feedback_text.configure(state="normal")
         self.feedback_text.delete("1.0", "end")
-        self.feedback_text.insert("1.0", feedback.to_markdown())
+
+        # Handle both OrganizedFeedback and StructuredFeedback
+        if isinstance(feedback, (OrganizedFeedback, StructuredFeedback)):
+            self.feedback_text.insert("1.0", feedback.to_markdown())
+        else:
+            self.feedback_text.insert("1.0", str(feedback))
+
         self.feedback_text.configure(state="disabled")
 
         # Enable export buttons

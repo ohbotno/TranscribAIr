@@ -45,7 +45,9 @@ class FeedbackSettings:
     default_rubric: str = ""
     last_selected_rubric: str = ""  # Persist last selected rubric
     include_raw_transcript: bool = False  # Changed default to False
-    feedback_detail_level: str = "detailed"  # "brief" or "detailed"
+    feedback_detail_level: str = "detailed"  # "brief", "detailed", or "instruction_prompt"
+    feedback_mode: str = "organized"  # "organized" (by criteria) or "structured" (four-section format)
+    instruction_prompt: str = ""  # Custom instruction prompt for structured feedback
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -113,17 +115,38 @@ class SettingsManager:
         self.config_dir.mkdir(parents=True, exist_ok=True)
         self.config_file = self.config_dir / "settings.json"
 
+    def _load_default_instruction_prompt(self) -> str:
+        """Load default instruction prompt from InstructionPrompt.txt."""
+        try:
+            # Look for InstructionPrompt.txt in project root
+            prompt_file = Path(__file__).parent.parent / "InstructionPrompt.txt"
+            if prompt_file.exists():
+                with open(prompt_file, 'r', encoding='utf-8') as f:
+                    return f.read()
+        except Exception as e:
+            print(f"Error loading default instruction prompt: {e}")
+
+        return ""
+
     def load_settings(self) -> AppSettings:
         """Load settings from disk, or return defaults if not found."""
         try:
             if self.config_file.exists():
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                return AppSettings.from_dict(data)
+                settings = AppSettings.from_dict(data)
+
+                # Load default instruction prompt if not set
+                if not settings.feedback.instruction_prompt:
+                    settings.feedback.instruction_prompt = self._load_default_instruction_prompt()
+
+                return settings
         except Exception as e:
             print(f"Error loading settings: {e}")
 
-        return AppSettings.default()
+        settings = AppSettings.default()
+        settings.feedback.instruction_prompt = self._load_default_instruction_prompt()
+        return settings
 
     def save_settings(self, settings: AppSettings) -> bool:
         """Save settings to disk."""

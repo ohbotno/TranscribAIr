@@ -58,6 +58,34 @@ class OrganizedFeedback:
         return "\n".join(lines)
 
 
+@dataclass
+class StructuredFeedback:
+    """Structured feedback in four-section format (Overall Summary, Strengths, Areas for Improvement, Closing Comment)."""
+    rubric_name: str
+    feedback_text: str  # The complete structured feedback
+    raw_transcript: str = ""
+
+    def to_markdown(self) -> str:
+        """Convert structured feedback to markdown format."""
+        lines = [f"# Feedback: {self.rubric_name}", ""]
+        lines.append(self.feedback_text)
+
+        if self.raw_transcript:
+            lines.extend(["", "---", "## Raw Transcript", self.raw_transcript])
+
+        return "\n".join(lines)
+
+    def to_plain_text(self) -> str:
+        """Convert structured feedback to plain text format."""
+        lines = [f"FEEDBACK: {self.rubric_name}", "=" * 60, ""]
+        lines.append(self.feedback_text)
+
+        if self.raw_transcript:
+            lines.extend(["", "=" * 60, "RAW TRANSCRIPT:", self.raw_transcript])
+
+        return "\n".join(lines)
+
+
 class BaseLLMProvider(ABC):
     """Abstract base class for LLM providers."""
 
@@ -82,6 +110,26 @@ class BaseLLMProvider(ABC):
         pass
 
     @abstractmethod
+    def organize_structured_feedback(
+        self,
+        transcript: str,
+        rubric: Rubric,
+        instruction_prompt: str
+    ) -> Optional[StructuredFeedback]:
+        """
+        Convert transcript to structured feedback using custom instruction prompt.
+
+        Args:
+            transcript: Raw transcript text
+            rubric: Rubric for alignment
+            instruction_prompt: Custom instruction prompt template
+
+        Returns:
+            StructuredFeedback object or None if failed
+        """
+        pass
+
+    @abstractmethod
     def is_available(self) -> bool:
         """Check if this provider is available and configured."""
         pass
@@ -98,9 +146,9 @@ class BaseLLMProvider(ABC):
             else "Provide detailed, constructive feedback for each criterion with specific examples from the transcript."
         )
 
-        prompt = f"""You are an educational assessment assistant helping teachers provide structured feedback to students.
+        prompt = f"""You are organizing verbal feedback that a teacher has recorded. Your task is to organize this feedback according to the provided rubric criteria.
 
-The teacher has recorded verbal feedback while reviewing a student's work. Your task is to organize this feedback according to the provided rubric criteria.
+The feedback should be written in FIRST PERSON, as if the teacher is speaking directly to the student (use "I", "my observations", "I noticed", etc.).
 
 RUBRIC: {rubric.name}
 {rubric.description}
@@ -115,23 +163,46 @@ INSTRUCTIONS:
 1. Analyze the transcript and identify feedback related to each rubric criterion
 2. {detail_instruction}
 3. If the teacher didn't mention a specific criterion, note that it wasn't addressed
-4. Maintain the teacher's tone and specific comments
-5. Provide a brief overall summary (2-3 sentences)
+4. Write in FIRST PERSON perspective - as if the teacher is speaking directly ("I think...", "I noticed...", "In my view...")
+5. Maintain the teacher's conversational tone and specific comments
+6. Provide a brief overall summary (2-3 sentences) in first person
 
 OUTPUT FORMAT:
 Return your response in the following JSON format:
 {{
-    "summary": "Brief overall summary of the feedback",
+    "summary": "Brief overall summary in first person (e.g., 'I found your work...')",
     "criterion_feedback": {{
-        "Criterion Name 1": "Organized feedback for this criterion",
-        "Criterion Name 2": "Organized feedback for this criterion",
+        "Criterion Name 1": "Feedback in first person for this criterion",
+        "Criterion Name 2": "Feedback in first person for this criterion",
         ...
     }}
 }}
 
-Ensure all criterion names from the rubric are included in your response, even if the teacher didn't explicitly address them (in which case note "Not addressed in feedback" or similar).
+IMPORTANT: All feedback must be written in first person, as if the teacher is speaking directly to the student.
+
+Ensure all criterion names from the rubric are included in your response, even if the teacher didn't explicitly address them (in which case note "I didn't address this in my feedback" or similar).
 """
         return prompt
+
+    def _build_structured_prompt(self, transcript: str, rubric: Rubric, instruction_prompt: str) -> str:
+        """Build the prompt for structured feedback conversion."""
+        # Build rubric text
+        rubric_text = f"{rubric.name}\n{rubric.description}\n\nCriteria:\n"
+        for criterion in rubric.criteria:
+            rubric_text += f"- **{criterion.name}**: {criterion.description}\n"
+
+        # Combine instruction prompt with inputs
+        full_prompt = f"""{instruction_prompt}
+
+---
+
+RUBRIC:
+{rubric_text}
+
+TRANSCRIPT:
+{transcript}
+"""
+        return full_prompt
 
 
 class OllamaProvider(BaseLLMProvider):
@@ -202,6 +273,37 @@ class OllamaProvider(BaseLLMProvider):
             # Re-raise to let UI handle the error display
             raise
 
+    def organize_structured_feedback(
+        self,
+        transcript: str,
+        rubric: Rubric,
+        instruction_prompt: str
+    ) -> Optional[StructuredFeedback]:
+        """Convert transcript to structured feedback using Ollama."""
+        client = self._get_client()
+        if not client:
+            return None
+
+        try:
+            prompt = self._build_structured_prompt(transcript, rubric, instruction_prompt)
+
+            response = client.chat(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            feedback_text = response['message']['content']
+
+            return StructuredFeedback(
+                rubric_name=rubric.name,
+                feedback_text=feedback_text,
+                raw_transcript=transcript
+            )
+
+        except Exception as e:
+            print(f"Error organizing structured feedback with Ollama: {e}")
+            raise
+
 
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI API provider."""
@@ -259,6 +361,37 @@ class OpenAIProvider(BaseLLMProvider):
         except Exception as e:
             print(f"Error organizing feedback with OpenAI: {e}")
             # Re-raise to let UI handle the error display
+            raise
+
+    def organize_structured_feedback(
+        self,
+        transcript: str,
+        rubric: Rubric,
+        instruction_prompt: str
+    ) -> Optional[StructuredFeedback]:
+        """Convert transcript to structured feedback using OpenAI."""
+        client = self._get_client()
+        if not client:
+            return None
+
+        try:
+            prompt = self._build_structured_prompt(transcript, rubric, instruction_prompt)
+
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            feedback_text = response.choices[0].message.content
+
+            return StructuredFeedback(
+                rubric_name=rubric.name,
+                feedback_text=feedback_text,
+                raw_transcript=transcript
+            )
+
+        except Exception as e:
+            print(f"Error organizing structured feedback with OpenAI: {e}")
             raise
 
 
@@ -332,6 +465,38 @@ class AnthropicProvider(BaseLLMProvider):
             # Re-raise to let UI handle the error display
             raise
 
+    def organize_structured_feedback(
+        self,
+        transcript: str,
+        rubric: Rubric,
+        instruction_prompt: str
+    ) -> Optional[StructuredFeedback]:
+        """Convert transcript to structured feedback using Anthropic Claude."""
+        client = self._get_client()
+        if not client:
+            return None
+
+        try:
+            prompt = self._build_structured_prompt(transcript, rubric, instruction_prompt)
+
+            response = client.messages.create(
+                model=self.model,
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            feedback_text = response.content[0].text
+
+            return StructuredFeedback(
+                rubric_name=rubric.name,
+                feedback_text=feedback_text,
+                raw_transcript=transcript
+            )
+
+        except Exception as e:
+            print(f"Error organizing structured feedback with Anthropic: {e}")
+            raise
+
 
 class OpenRouterProvider(BaseLLMProvider):
     """OpenRouter API provider - unified API for multiple LLM models."""
@@ -395,6 +560,37 @@ class OpenRouterProvider(BaseLLMProvider):
             # Re-raise to let UI handle the error display
             raise
 
+    def organize_structured_feedback(
+        self,
+        transcript: str,
+        rubric: Rubric,
+        instruction_prompt: str
+    ) -> Optional[StructuredFeedback]:
+        """Convert transcript to structured feedback using OpenRouter."""
+        client = self._get_client()
+        if not client:
+            return None
+
+        try:
+            prompt = self._build_structured_prompt(transcript, rubric, instruction_prompt)
+
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            feedback_text = response.choices[0].message.content
+
+            return StructuredFeedback(
+                rubric_name=rubric.name,
+                feedback_text=feedback_text,
+                raw_transcript=transcript
+            )
+
+        except Exception as e:
+            print(f"Error organizing structured feedback with OpenRouter: {e}")
+            raise
+
 
 class FeedbackOrganizer:
     """Main feedback organization coordinator."""
@@ -442,6 +638,36 @@ class FeedbackOrganizer:
             return None
 
         return provider.organize_feedback(transcript, rubric, detail_level)
+
+    def organize_structured_feedback(
+        self,
+        transcript: str,
+        rubric: Rubric,
+        instruction_prompt: str,
+        provider_name: Optional[str] = None
+    ) -> Optional[StructuredFeedback]:
+        """
+        Convert transcript to structured feedback using custom instruction prompt.
+
+        Args:
+            transcript: Raw transcript text
+            rubric: Rubric for alignment
+            instruction_prompt: Custom instruction prompt template
+            provider_name: Optional override for provider
+
+        Returns:
+            StructuredFeedback or None if failed
+        """
+        provider = self.get_provider(provider_name)
+        if not provider:
+            print(f"Provider '{provider_name or self.settings.provider}' not available")
+            return None
+
+        if not provider.is_available():
+            print(f"Provider '{provider_name or self.settings.provider}' is not available or configured")
+            return None
+
+        return provider.organize_structured_feedback(transcript, rubric, instruction_prompt)
 
     def list_available_providers(self) -> List[str]:
         """List all available and configured providers."""

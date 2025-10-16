@@ -296,7 +296,8 @@ class SettingsDialog(ctk.CTkToplevel):
         """Create feedback settings tab."""
         tab = self.tabview.tab("Feedback")
 
-        container = ctk.CTkFrame(tab)
+        # Scrollable container
+        container = ctk.CTkScrollableFrame(tab)
         container.pack(fill="both", expand=True, padx=10, pady=10)
 
         # Auto-organize toggle
@@ -310,6 +311,31 @@ class SettingsDialog(ctk.CTkToplevel):
             variable=self.auto_organize_var
         )
         self.auto_organize_check.pack(anchor="w", padx=10, pady=10)
+
+        # Feedback mode
+        mode_frame = ctk.CTkFrame(container)
+        mode_frame.pack(fill="x", padx=10, pady=10)
+
+        ctk.CTkLabel(
+            mode_frame,
+            text="Feedback Mode:",
+            font=ctk.CTkFont(weight="bold")
+        ).pack(anchor="w", padx=10, pady=(10, 5))
+
+        self.feedback_mode_var = ctk.StringVar(value="organized")
+        ctk.CTkRadioButton(
+            mode_frame,
+            text="Organized by Criteria (organize by rubric criteria)",
+            variable=self.feedback_mode_var,
+            value="organized"
+        ).pack(anchor="w", padx=20, pady=5)
+
+        ctk.CTkRadioButton(
+            mode_frame,
+            text="Structured Feedback (four-section format)",
+            variable=self.feedback_mode_var,
+            value="structured"
+        ).pack(anchor="w", padx=20, pady=5)
 
         # Detail level
         detail_frame = ctk.CTkFrame(container)
@@ -336,6 +362,13 @@ class SettingsDialog(ctk.CTkToplevel):
             value="detailed"
         ).pack(anchor="w", padx=20, pady=5)
 
+        ctk.CTkRadioButton(
+            detail_frame,
+            text="Instruction Prompt (use custom instruction prompt)",
+            variable=self.detail_var,
+            value="instruction_prompt"
+        ).pack(anchor="w", padx=20, pady=5)
+
         # Include raw transcript
         raw_frame = ctk.CTkFrame(container)
         raw_frame.pack(fill="x", padx=10, pady=10)
@@ -347,6 +380,30 @@ class SettingsDialog(ctk.CTkToplevel):
             variable=self.include_raw_var
         )
         self.include_raw_check.pack(anchor="w", padx=10, pady=10)
+
+        # Instruction prompt editor
+        prompt_frame = ctk.CTkFrame(container)
+        prompt_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        ctk.CTkLabel(
+            prompt_frame,
+            text="Instruction Prompt (for structured feedback):",
+            font=ctk.CTkFont(weight="bold")
+        ).pack(anchor="w", padx=10, pady=(10, 5))
+
+        ctk.CTkLabel(
+            prompt_frame,
+            text="This prompt is used when 'Structured Feedback' mode is selected or 'Instruction Prompt' detail level is used.",
+            font=ctk.CTkFont(size=10),
+            text_color="gray"
+        ).pack(anchor="w", padx=10, pady=(0, 5))
+
+        self.instruction_prompt_text = ctk.CTkTextbox(
+            prompt_frame,
+            height=200,
+            wrap="word"
+        )
+        self.instruction_prompt_text.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
     def _update_provider_panels(self):
         """Update which provider settings panel is visible."""
@@ -384,6 +441,8 @@ class SettingsDialog(ctk.CTkToplevel):
         self.auto_organize_var.set(self.settings.feedback.auto_organize)
         self.detail_var.set(self.settings.feedback.feedback_detail_level)
         self.include_raw_var.set(self.settings.feedback.include_raw_transcript)
+        self.feedback_mode_var.set(self.settings.feedback.feedback_mode)
+        self.instruction_prompt_text.insert("1.0", self.settings.feedback.instruction_prompt)
 
         # Update UI
         self._update_provider_panels()
@@ -405,6 +464,8 @@ class SettingsDialog(ctk.CTkToplevel):
         self.settings.feedback.auto_organize = self.auto_organize_var.get()
         self.settings.feedback.feedback_detail_level = self.detail_var.get()
         self.settings.feedback.include_raw_transcript = self.include_raw_var.get()
+        self.settings.feedback.feedback_mode = self.feedback_mode_var.get()
+        self.settings.feedback.instruction_prompt = self.instruction_prompt_text.get("1.0", "end-1c")
 
         # Save to disk
         if self.settings_manager.save_settings(self.settings):
