@@ -89,14 +89,9 @@ exe = EXE(
     name='Transcribair',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,  # Strip symbols to reduce size (safe for Python)
-    upx=True,  # Enable UPX compression
-    upx_exclude=[
-        # Exclude files that don't compress well or cause issues
-        'vcruntime140.dll',
-        'python*.dll',
-        'Qt*.dll',
-    ],
+    strip=False,  # Disable stripping to avoid DLL issues
+    upx=False,  # Disable UPX - causes DLL loading issues on some systems
+    upx_exclude=[],
     runtime_tmpdir=None,
     console=False,  # Set to False for windowed app (no console)
     disable_windowed_traceback=False,

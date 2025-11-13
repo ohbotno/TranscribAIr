@@ -106,8 +106,8 @@ def build_executable(ffmpeg_path: str):
         print(f"Size: {exe_size:.2f} MB")
         print("\nOptimizations applied:")
         print("  [OK] Excluded unused packages")
-        print("  [OK] UPX compression enabled")
-        print("  [OK] Debug symbols stripped")
+        print("  [OK] UPX compression disabled (for compatibility)")
+        print("  [OK] Debug symbols preserved (for stability)")
         print("  [OK] FFmpeg bundled ({} executables)".format(
             len([f for f in (Path(ffmpeg_path).parent if Path(ffmpeg_path).is_file() else Path(ffmpeg_path)).glob('*.exe')])
         ))
