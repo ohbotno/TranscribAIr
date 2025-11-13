@@ -6,6 +6,9 @@ import customtkinter as ctk
 from typing import Optional
 from pathlib import Path
 import threading
+import urllib.request
+import json
+from tkinter import messagebox
 
 from core import Transcriber
 from core.rubric import RubricManager
@@ -15,6 +18,14 @@ from .upload_tab import UploadTab
 from .record_tab import RecordTab
 from .settings_dialog import SettingsDialog
 
+# Import version info
+try:
+    from __version__ import __version__, APP_NAME, APP_URL
+except ImportError:
+    __version__ = "1.0.0"
+    APP_NAME = "TranscribAIr"
+    APP_URL = "https://github.com/yourusername/TranscribAIr"
+
 
 class MainWindow(ctk.CTk):
     """Main application window."""
@@ -23,7 +34,7 @@ class MainWindow(ctk.CTk):
         super().__init__()
 
         # Window configuration
-        self.title("TranscribAIr")
+        self.title(f"{APP_NAME} v{__version__}")
         self.geometry("1200x800")
 
         # Set theme
@@ -115,6 +126,15 @@ class MainWindow(ctk.CTk):
             width=100
         )
         settings_btn.pack(side="left", padx=(15, 0))
+
+        # About button
+        about_btn = ctk.CTkButton(
+            model_frame,
+            text="ℹ About",
+            command=self._show_about,
+            width=80
+        )
+        about_btn.pack(side="left", padx=(10, 0))
 
     def _create_tabs(self):
         """Create tabbed interface for Upload and Record."""
@@ -343,3 +363,118 @@ class MainWindow(ctk.CTk):
             self.record_tab.feedback_panel.feedback_organizer = self.feedback_organizer
 
         self._update_status("Settings saved")
+
+    def _check_for_updates(self):
+        """Check for updates from GitHub releases."""
+        try:
+            # GitHub API endpoint for latest release
+            api_url = f"{APP_URL.replace('github.com', 'api.github.com/repos')}/releases/latest"
+
+            with urllib.request.urlopen(api_url, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                latest_version = data.get("tag_name", "").lstrip("v")
+                download_url = data.get("html_url", APP_URL)
+
+                # Compare versions (simple string comparison for semantic versioning)
+                if latest_version and latest_version > __version__:
+                    return True, latest_version, download_url
+                else:
+                    return False, __version__, None
+        except Exception:
+            # Silently fail on network errors
+            return False, __version__, None
+
+    def _show_about(self):
+        """Show About dialog with version info and update check."""
+        # Check for updates in background
+        update_available = False
+        latest_version = __version__
+        download_url = None
+
+        def check_updates():
+            nonlocal update_available, latest_version, download_url
+            update_available, latest_version, download_url = self._check_for_updates()
+
+        # Run update check in background thread
+        check_thread = threading.Thread(target=check_updates, daemon=True)
+        check_thread.start()
+        check_thread.join(timeout=3)  # Wait max 3 seconds
+
+        # Build about message
+        about_text = f"""{APP_NAME}
+Version: {__version__}
+
+AI-powered audio transcription and feedback organization tool.
+
+Built with:
+• Faster-Whisper for transcription
+• CustomTkinter for modern UI
+• Multiple LLM provider support
+
+"""
+
+        if update_available:
+            about_text += f"🎉 New version available: v{latest_version}\n\n"
+            update_text = f"A new version (v{latest_version}) is available!\n\nWould you like to download it?"
+        else:
+            about_text += "✓ You're using the latest version\n\n"
+            update_text = None
+
+        about_text += f"© 2025 Swansea University\n\nMIT License\n\n{APP_URL}"
+
+        # Show about dialog
+        dialog = ctk.CTkToplevel(self)
+        dialog.title(f"About {APP_NAME}")
+        dialog.geometry("500x400")
+        dialog.resizable(False, False)
+
+        # Make dialog modal
+        dialog.transient(self)
+        dialog.grab_set()
+
+        # Center dialog on parent window
+        dialog.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width() - 500) // 2
+        y = self.winfo_y() + (self.winfo_height() - 400) // 2
+        dialog.geometry(f"+{x}+{y}")
+
+        # About text
+        text_widget = ctk.CTkTextbox(
+            dialog,
+            width=460,
+            height=300,
+            font=ctk.CTkFont(size=12),
+            wrap="word"
+        )
+        text_widget.pack(padx=20, pady=20)
+        text_widget.insert("1.0", about_text)
+        text_widget.configure(state="disabled")
+
+        # Buttons frame
+        btn_frame = ctk.CTkFrame(dialog)
+        btn_frame.pack(fill="x", padx=20, pady=(0, 20))
+
+        # Download button (if update available)
+        if update_available and download_url:
+            def open_download():
+                import webbrowser
+                webbrowser.open(download_url)
+                dialog.destroy()
+
+            download_btn = ctk.CTkButton(
+                btn_frame,
+                text="Download Update",
+                command=open_download,
+                fg_color="green",
+                width=150
+            )
+            download_btn.pack(side="left", padx=(0, 10))
+
+        # Close button
+        close_btn = ctk.CTkButton(
+            btn_frame,
+            text="Close",
+            command=dialog.destroy,
+            width=100
+        )
+        close_btn.pack(side="right")

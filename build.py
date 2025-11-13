@@ -45,6 +45,16 @@ def install_ffmpeg():
         return None
 
 
+def get_size_mb(path: Path) -> float:
+    """Get file or directory size in MB."""
+    if path.is_file():
+        return path.stat().st_size / (1024 * 1024)
+    elif path.is_dir():
+        total = sum(f.stat().st_size for f in path.rglob('*') if f.is_file())
+        return total / (1024 * 1024)
+    return 0.0
+
+
 def build_executable(ffmpeg_path: str):
     """Build the executable using PyInstaller."""
     print("\nBuilding Transcribair executable...")
@@ -66,17 +76,33 @@ def build_executable(ffmpeg_path: str):
     update_spec_with_ffmpeg(ffmpeg_path)
 
     # Run PyInstaller
-    print("\nRunning PyInstaller...")
+    print("\nRunning PyInstaller with optimizations...")
+    print("• Excluding unused packages (matplotlib, scipy, pandas, etc.)")
+    print("• Enabling UPX compression")
+    print("• Stripping debug symbols")
+    print("")
+
     result = subprocess.run(
         [sys.executable, "-m", "PyInstaller", "build.spec", "--clean"],
         capture_output=False
     )
 
     if result.returncode == 0:
+        exe_path = dist_dir / 'Transcribair.exe'
+        exe_size = get_size_mb(exe_path)
+
         print("\n" + "=" * 50)
         print("✓ Build successful!")
         print("=" * 50)
-        print(f"\nExecutable location: {dist_dir / 'Transcribair.exe'}")
+        print(f"\nExecutable: {exe_path}")
+        print(f"Size: {exe_size:.2f} MB")
+        print("\nOptimizations applied:")
+        print("  ✓ Excluded unused packages")
+        print("  ✓ UPX compression enabled")
+        print("  ✓ Debug symbols stripped")
+        print("  ✓ FFmpeg bundled ({} executables)".format(
+            len([f for f in (Path(ffmpeg_path).parent if Path(ffmpeg_path).is_file() else Path(ffmpeg_path)).glob('*.exe')])
+        ))
         print("\nNote: FFmpeg is bundled in the executable.")
         print("      First run will download the selected Whisper model.")
         print("      Models are cached in: %USERPROFILE%\\.transcribair\\models")
