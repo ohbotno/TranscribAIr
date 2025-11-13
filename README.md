@@ -1,6 +1,6 @@
 # TranscribAIr
 
-[![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](https://github.com/otherworld-dev/TranscribAIr/releases)
+[![Version](https://img.shields.io/badge/version-1.0.5-blue.svg)](https://github.com/otherworld-dev/TranscribAIr/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 
@@ -19,9 +19,7 @@ AI-powered audio transcription with intelligent feedback organization for educat
 
 ### For End Users
 
-Download the latest installer: **[TranscribAIr-1.0.4-Setup.exe](https://github.com/otherworld-dev/TranscribAIr/releases/latest)**
-
-Or get the portable version: **[TranscribAIr-1.0.4-Portable.zip](https://github.com/otherworld-dev/TranscribAIr/releases/latest)**
+**[Download from Releases](https://github.com/otherworld-dev/TranscribAIr/releases/latest)** - Get the latest Windows executable or installer
 
 ### For Developers
 

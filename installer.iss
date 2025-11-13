@@ -9,7 +9,7 @@
 ; The installer will be created in the Output directory
 
 #define MyAppName "TranscribAIr"
-#define MyAppVersion "1.0.4"
+#define MyAppVersion "1.0.5"
 #define MyAppPublisher "Swansea University"
 #define MyAppURL "https://github.com/otherworld-dev/TranscribAIr"
 #define MyAppExeName "Transcribair.exe"

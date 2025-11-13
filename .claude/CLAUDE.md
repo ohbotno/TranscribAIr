@@ -1,36 +1,42 @@
 # TranscribAIr - Release Process Documentation
 
-This document contains important information about the release process, CI/CD setup, and lessons learned from establishing the automated build workflow.
+This document contains important information about the manual release process and version management.
 
 ## Table of Contents
 
 - [Quick Release Checklist](#quick-release-checklist)
-- [Detailed Release Process](#detailed-release-process)
+- [Manual Release Process](#manual-release-process)
 - [Version Numbering](#version-numbering)
-- [CI/CD Workflow](#cicd-workflow)
-- [Common Issues & Solutions](#common-issues--solutions)
+- [Building the Executable](#building-the-executable)
+- [Creating GitHub Release](#creating-github-release)
 - [Files to Update for Each Release](#files-to-update-for-each-release)
 - [Testing Before Release](#testing-before-release)
 - [Post-Release Checklist](#post-release-checklist)
 
 ---
 
+## Note on Automated Releases
+
+**Automated CI/CD releases were removed in v1.0.5** due to complexity and reliability issues. Releases are now created manually to ensure quality and proper testing before distribution.
+
+---
+
 ## Quick Release Checklist
 
-Use this for routine releases after the initial setup:
+Use this for routine releases:
 
 1. **Update version number** in all required files
 2. **Update CHANGELOG.md** with changes
-3. **Commit changes** with conventional commit message
-4. **Create annotated tag** with release notes
-5. **Push to GitHub** (commits then tag)
-6. **Monitor CI/CD** workflow
-7. **Test the release** artifact
+3. **Build and test executable** locally
+4. **Commit changes** with conventional commit message
+5. **Create Git tag** with release notes
+6. **Create GitHub Release** manually
+7. **Upload executable** to release
 8. **Announce release** (if applicable)
 
 ---
 
-## Detailed Release Process
+## Manual Release Process
 
 ### Step 1: Update Version Numbers
 
@@ -119,37 +125,61 @@ Fixed:
 See CHANGELOG.md for detailed changes."
 ```
 
-### Step 5: Push to GitHub
+### Step 5: Build the Executable
 
-**Important:** Push commits FIRST, then tags:
+Build locally and test:
+
+```bash
+# Build the executable
+python build.py
+
+# This will create: dist/Transcribair.exe
+```
+
+Test the executable thoroughly:
+- Launch and check UI
+- Test transcription (upload and record)
+- Test feedback organization
+- Test export features
+- Verify on clean Windows machine if possible
+
+### Step 6: Create Git Tag
+
+```bash
+git tag -a vX.Y.Z -m "TranscribAIr vX.Y.Z - Release Title
+
+Brief description of this release.
+
+Added:
+- Feature 1
+- Feature 2
+
+Fixed:
+- Bug fix 1
+- Bug fix 2
+
+See CHANGELOG.md for detailed changes."
+```
+
+### Step 7: Push to GitHub
 
 ```bash
 # Push commits
 git push origin main
 
-# Push tag (triggers CI/CD)
+# Push tag
 git push origin vX.Y.Z
 ```
 
-### Step 6: Monitor CI/CD
+### Step 8: Create GitHub Release
 
-1. Go to: https://github.com/otherworld-dev/TranscribAIr/actions
-2. Watch the workflow run
-3. Expected duration: 5-10 minutes
-4. Workflow should:
-   - Set up Python 3.11
-   - Install dependencies
-   - Install FFmpeg automatically
-   - Build optimized executable (~80-100MB)
-   - Create portable ZIP
-   - Create GitHub Release with artifacts
-
-### Step 7: Verify Release
-
-1. Check release page: https://github.com/otherworld-dev/TranscribAIr/releases
-2. Download `TranscribAIr-X.Y.Z-Portable.zip`
-3. Extract and test the executable
-4. Verify all features work correctly
+1. Go to: https://github.com/otherworld-dev/TranscribAIr/releases/new
+2. Select the tag you just pushed
+3. Release title: `TranscribAIr vX.Y.Z`
+4. Copy release notes from CHANGELOG.md
+5. Upload `dist/Transcribair.exe` (or create ZIP: `TranscribAIr-X.Y.Z-Portable.zip`)
+6. Upload installer if created (from Inno Setup)
+7. Publish release
 
 ---
 
@@ -168,43 +198,103 @@ Follow [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`
 
 ---
 
-## CI/CD Workflow
+## Building the Executable
 
-### Workflow File Location
-`.github/workflows/release.yml`
+### Prerequisites
 
-### Trigger
-Workflow runs automatically when a tag matching `v*.*.*` is pushed:
+- Python 3.9-3.13 installed
+- Virtual environment set up (via `setup.bat` or `setup.sh`)
+- PyInstaller installed (`pip install pyinstaller`)
+- FFmpeg available (auto-installed by build script)
+
+### Build Process
 
 ```bash
-git push origin v1.0.0  # Triggers workflow
-git push origin main    # Does NOT trigger workflow
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+
+# Linux/macOS:
+source venv/bin/activate
+
+# Build executable
+python build.py
 ```
 
-### Workflow Steps
+The build script will:
+1. Check for PyInstaller
+2. Install FFmpeg if needed
+3. Update build.spec with FFmpeg binaries
+4. Run PyInstaller with optimizations
+5. Create `dist/Transcribair.exe` (~150-200MB)
 
-1. **Checkout code** - Clones repository
-2. **Set up Python 3.11** - Installs Python
-3. **Get version from tag** - Extracts version number
-4. **Install dependencies** - Runs `pip install -r requirements.txt` + PyInstaller
-5. **Install FFmpeg** - Runs `python install_ffmpeg.py --auto`
-6. **Build executable** - Runs `python build.py`
-7. **Create portable ZIP** - Packages executable
-8. **Upload artifacts** - Stores build outputs
-9. **Create GitHub Release** - Publishes release with artifacts
+### Build Optimizations
 
-### Environment Variables
+Current settings (in `build.spec`):
+- **UPX compression**: Disabled (causes DLL issues)
+- **Symbol stripping**: Disabled (better compatibility)
+- **Package exclusions**: Enabled (removes unused packages)
+- **FFmpeg**: Bundled in executable
 
-```yaml
-CI: 'true'                    # Auto-detected by scripts
-GITHUB_ACTIONS: 'true'        # Auto-detected by scripts
-PYTHONIOENCODING: 'utf-8'     # Set in workflow
+### Creating Distribution ZIP
+
+```bash
+# Windows (PowerShell)
+cd dist
+Compress-Archive -Path Transcribair.exe -DestinationPath TranscribAIr-X.Y.Z-Portable.zip
+
+# Linux/macOS
+cd dist
+zip TranscribAIr-X.Y.Z-Portable.zip Transcribair.exe
 ```
 
-These environment variables tell `install_ffmpeg.py` and `build.py` to:
-- Skip interactive prompts
-- Use ASCII output (no Unicode symbols)
-- Auto-install dependencies
+---
+
+## Creating GitHub Release
+
+### Manual Release Steps
+
+1. **Build and test executable locally** (see above)
+2. **Create ZIP file** for distribution
+3. **Go to GitHub**:
+   - Navigate to: https://github.com/otherworld-dev/TranscribAIr/releases/new
+4. **Fill in release form**:
+   - Choose tag: Select the tag you pushed (vX.Y.Z)
+   - Release title: `TranscribAIr vX.Y.Z`
+   - Description: Copy from CHANGELOG.md
+5. **Upload artifacts**:
+   - `TranscribAIr-X.Y.Z-Portable.zip` (required)
+   - `TranscribAIr-X.Y.Z-Setup.exe` (optional, if using Inno Setup)
+6. **Publish release**
+
+### Release Notes Template
+
+```markdown
+## What's New
+
+[Copy Added/Changed/Fixed sections from CHANGELOG.md]
+
+## Installation
+
+**For End Users:**
+- Download `TranscribAIr-X.Y.Z-Portable.zip`
+- Extract and run `Transcribair.exe`
+- No installation required!
+
+**For Developers:**
+- Clone the repository
+- See [README.md](README.md) for setup instructions
+
+## System Requirements
+- Windows 10/11 (64-bit)
+- 4GB RAM minimum (8GB+ recommended)
+- 500MB disk space + Whisper models (75MB-2.9GB)
+
+## Links
+- [Full Changelog](CHANGELOG.md)
+- [Documentation](README.md)
+- [Report Issues](https://github.com/otherworld-dev/TranscribAIr/issues)
+```
 
 ---
 
