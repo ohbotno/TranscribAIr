@@ -31,13 +31,13 @@ class FFmpegInstaller:
         """Check if FFmpeg is already available."""
         # Check in PATH
         if shutil.which("ffmpeg"):
-            print("✓ FFmpeg already installed in system PATH")
+            print("[OK] FFmpeg already installed in system PATH")
             return True
 
         # Check in our install directory
         ffmpeg_exe = self.install_dir / ("ffmpeg.exe" if self.system == "Windows" else "ffmpeg")
         if ffmpeg_exe.exists():
-            print(f"✓ FFmpeg found in {self.install_dir}")
+            print(f"[OK] FFmpeg found in {self.install_dir}")
             self._add_to_path()
             return True
 
@@ -52,7 +52,7 @@ class FFmpegInstaller:
         print("-" * 50)
 
         if self.system not in self.FFMPEG_URLS:
-            print(f"✗ Automatic installation not supported for {self.system}")
+            print(f"[ERROR] Automatic installation not supported for {self.system}")
             print("  Please install FFmpeg manually:")
             print("  https://ffmpeg.org/download.html")
             return False
@@ -74,15 +74,15 @@ class FFmpegInstaller:
 
             # Verify
             if self._verify_installation():
-                print("\n✓ FFmpeg installed successfully!")
+                print("\n[OK] FFmpeg installed successfully!")
                 self._add_to_path()
                 return True
             else:
-                print("\n✗ FFmpeg installation verification failed")
+                print("\n[ERROR] FFmpeg installation verification failed")
                 return False
 
         except Exception as e:
-            print(f"\n✗ Installation failed: {str(e)}")
+            print(f"\n[ERROR] Installation failed: {str(e)}")
             return False
 
     def _download_with_progress(self, url: str, output_path: Path):

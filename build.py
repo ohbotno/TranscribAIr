@@ -15,9 +15,9 @@ def check_requirements():
     """Check if required tools are installed."""
     try:
         import PyInstaller
-        print("✓ PyInstaller found")
+        print("[OK] PyInstaller found")
     except ImportError:
-        print("✗ PyInstaller not found")
+        print("[ERROR] PyInstaller not found")
         print("  Install with: pip install pyinstaller")
         return False
 
@@ -46,10 +46,10 @@ def install_ffmpeg():
         if installer.install():
             return installer.get_ffmpeg_path()
         else:
-            print("\n✗ FFmpeg installation failed!")
+            print("\n[ERROR] FFmpeg installation failed!")
             return None
     else:
-        print("\n✗ Build requires FFmpeg to be installed.")
+        print("\n[ERROR] Build requires FFmpeg to be installed.")
         return None
 
 
@@ -100,22 +100,22 @@ def build_executable(ffmpeg_path: str):
         exe_size = get_size_mb(exe_path)
 
         print("\n" + "=" * 50)
-        print("✓ Build successful!")
+        print("[OK] Build successful!")
         print("=" * 50)
         print(f"\nExecutable: {exe_path}")
         print(f"Size: {exe_size:.2f} MB")
         print("\nOptimizations applied:")
-        print("  ✓ Excluded unused packages")
-        print("  ✓ UPX compression enabled")
-        print("  ✓ Debug symbols stripped")
-        print("  ✓ FFmpeg bundled ({} executables)".format(
+        print("  [OK] Excluded unused packages")
+        print("  [OK] UPX compression enabled")
+        print("  [OK] Debug symbols stripped")
+        print("  [OK] FFmpeg bundled ({} executables)".format(
             len([f for f in (Path(ffmpeg_path).parent if Path(ffmpeg_path).is_file() else Path(ffmpeg_path)).glob('*.exe')])
         ))
         print("\nNote: FFmpeg is bundled in the executable.")
         print("      First run will download the selected Whisper model.")
         print("      Models are cached in: %USERPROFILE%\\.transcribair\\models")
     else:
-        print("\n✗ Build failed!")
+        print("\n[ERROR] Build failed!")
         return False
 
     return True
@@ -135,7 +135,7 @@ def update_spec_with_ffmpeg(ffmpeg_path: str):
             ffmpeg_files.append((str(exe_path), 'ffmpeg'))
 
     if not ffmpeg_files:
-        print("⚠ Warning: No FFmpeg executables found to bundle")
+        print("[WARNING] No FFmpeg executables found to bundle")
         return
 
     # Read current spec
@@ -153,7 +153,7 @@ def update_spec_with_ffmpeg(ffmpeg_path: str):
     with open(spec_file, 'w') as f:
         f.write(spec_content)
 
-    print(f"✓ Bundling {len(ffmpeg_files)} FFmpeg executables")
+    print(f"[OK] Bundling {len(ffmpeg_files)} FFmpeg executables")
 
 
 def main():

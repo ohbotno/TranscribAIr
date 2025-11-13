@@ -5,6 +5,14 @@ All notable changes to TranscribAIr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-11-13
+
+### Fixed
+- CI/CD workflow: Fixed Unicode encoding errors in Windows GitHub Actions (cp1252 codec)
+- Replaced all Unicode checkmarks (✓) and crosses (✗) with ASCII equivalents ([OK], [ERROR])
+- Added UTF-8 encoding environment variable to workflow steps
+- Build and installation scripts now work correctly on Windows CI runners
+
 ## [1.0.1] - 2025-11-13
 
 ### Fixed
