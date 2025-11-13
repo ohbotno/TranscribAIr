@@ -26,13 +26,21 @@ def check_requirements():
 
 def install_ffmpeg():
     """Install FFmpeg if not already available."""
-    installer = FFmpegInstaller()
+    # Check if running in CI environment
+    ci_mode = os.environ.get('CI') == 'true' or os.environ.get('GITHUB_ACTIONS') == 'true'
+
+    installer = FFmpegInstaller(auto_install=ci_mode)
 
     if installer.is_installed():
         return installer.get_ffmpeg_path()
 
     print("\nFFmpeg is required for building Transcribair.")
-    response = input("Install FFmpeg automatically? [Y/n]: ").strip().lower()
+
+    if ci_mode:
+        print("CI environment detected. Installing FFmpeg automatically...")
+        response = 'y'
+    else:
+        response = input("Install FFmpeg automatically? [Y/n]: ").strip().lower()
 
     if response in ['', 'y', 'yes']:
         if installer.install():

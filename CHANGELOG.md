@@ -5,6 +5,14 @@ All notable changes to TranscribAIr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-13
+
+### Fixed
+- CI/CD workflow: Fixed FFmpeg installation failing in GitHub Actions due to interactive prompts
+- Added automatic CI environment detection in `install_ffmpeg.py` and `build.py`
+- Enhanced `install_ffmpeg.py` to auto-detect CI environments (GITHUB_ACTIONS, CI env vars)
+- Build script now handles non-interactive environments gracefully
+
 ## [1.0.0] - 2025-11-13
 
 ### Added
@@ -21,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rubric-based feedback organization
 - Export to PDF and Word formats
 - Python 3.13 compatibility fixes
+- Modern Python packaging with pyproject.toml
+- Professional Windows installer with Inno Setup
+- Auto-update capability with GitHub Releases integration
+- Version display in application
+- Optimized executable build for smaller file size
+- CI/CD pipeline for automated releases
+- Comprehensive development documentation
 
 ### Changed
 - Initial public release version
@@ -31,13 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Modern Python packaging with pyproject.toml
-- Professional Windows installer with Inno Setup
-- Auto-update capability with GitHub Releases integration
-- Version display in application
-- Optimized executable build for smaller file size
-- CI/CD pipeline for automated releases
-- Comprehensive development documentation
+- Future features will be listed here
 
 ---
 

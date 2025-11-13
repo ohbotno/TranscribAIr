@@ -1,6 +1,6 @@
 # TranscribAIr
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/otherworld-dev/TranscribAIr/releases)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/otherworld-dev/TranscribAIr/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 
@@ -36,7 +36,7 @@ A desktop application for audio transcription powered by OpenAI's Whisper model.
 
 **Download the pre-built installer from [GitHub Releases](https://github.com/otherworld-dev/TranscribAIr/releases)**
 
-1. Download `TranscribAIr-1.0.0-Setup.exe`
+1. Download `TranscribAIr-1.0.1-Setup.exe`
 2. Run the installer
 3. Follow the installation wizard
 4. Launch TranscribAIr from Start Menu or Desktop shortcut

@@ -167,8 +167,13 @@ class FFmpegInstaller:
 
 def main():
     """Main installation process."""
-    # Check for --auto flag
-    auto_install = '--auto' in sys.argv or '-y' in sys.argv
+    # Check for --auto flag or CI environment
+    auto_install = (
+        '--auto' in sys.argv or
+        '-y' in sys.argv or
+        os.environ.get('CI') == 'true' or
+        os.environ.get('GITHUB_ACTIONS') == 'true'
+    )
 
     print("=" * 50)
     print("Transribair - FFmpeg Installer")

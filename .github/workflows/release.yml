@@ -43,7 +43,7 @@ jobs:
 
       - name: Install FFmpeg
         run: |
-          python install_ffmpeg.py
+          python install_ffmpeg.py --auto
         continue-on-error: false
 
       - name: Build executable with PyInstaller
