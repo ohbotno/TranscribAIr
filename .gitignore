@@ -25,7 +25,7 @@ wheels/
 
 # PyInstaller
 *.manifest
-*.spec
+# *.spec - commented out to allow build.spec to be committed
 
 # Virtual environments
 venv/
@@ -58,4 +58,4 @@ test_*.py
 
 # Build artifacts
 nul
-build.spec
+# build.spec - removed to allow committing (needed for CI/CD)
