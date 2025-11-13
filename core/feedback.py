@@ -136,9 +136,21 @@ class BaseLLMProvider(ABC):
 
     def _build_prompt(self, transcript: str, rubric: Rubric, detail_level: str) -> str:
         """Build the prompt for organizing feedback."""
-        criteria_list = "\n".join([
-            f"- {c.name}: {c.description}" for c in rubric.criteria
-        ])
+        # Build criteria list with performance levels if available
+        criteria_parts = []
+        for c in rubric.criteria:
+            if c.performance_levels:
+                # Format criterion with performance levels
+                criterion_text = f"- {c.name}:\n"
+                for pl in c.performance_levels:
+                    range_text = f" ({pl.score_range})" if pl.score_range else ""
+                    criterion_text += f"  • {pl.name}{range_text}: {pl.description}\n"
+                criteria_parts.append(criterion_text.rstrip())
+            else:
+                # Simple criterion
+                criteria_parts.append(f"- {c.name}: {c.description}")
+
+        criteria_list = "\n".join(criteria_parts)
 
         detail_instruction = (
             "Provide concise, actionable feedback for each criterion."
@@ -189,7 +201,15 @@ Ensure all criterion names from the rubric are included in your response, even i
         # Build rubric text
         rubric_text = f"{rubric.name}\n{rubric.description}\n\nCriteria:\n"
         for criterion in rubric.criteria:
-            rubric_text += f"- **{criterion.name}**: {criterion.description}\n"
+            if criterion.performance_levels:
+                # Format criterion with performance levels
+                rubric_text += f"- **{criterion.name}**:\n"
+                for pl in criterion.performance_levels:
+                    range_text = f" ({pl.score_range})" if pl.score_range else ""
+                    rubric_text += f"  • {pl.name}{range_text}: {pl.description}\n"
+            else:
+                # Simple criterion
+                rubric_text += f"- **{criterion.name}**: {criterion.description}\n"
 
         # Combine instruction prompt with inputs
         full_prompt = f"""{instruction_prompt}

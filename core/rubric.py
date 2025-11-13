@@ -10,18 +10,51 @@ from datetime import datetime
 
 
 @dataclass
-class RubricCriterion:
-    """A single criterion in a rubric."""
-    name: str
+class PerformanceLevel:
+    """A performance level descriptor for a rubric criterion."""
+    name: str  # e.g., "Poor", "Below Standard", "Excellent"
+    score_range: str  # e.g., "<40%", "40-50%", "70-80%"
     description: str
-    weight: float = 1.0  # Optional weighting for criteria
 
     def to_dict(self) -> dict:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'RubricCriterion':
+    def from_dict(cls, data: dict) -> 'PerformanceLevel':
         return cls(**data)
+
+
+@dataclass
+class RubricCriterion:
+    """A single criterion in a rubric."""
+    name: str
+    description: str = ""  # For simple rubrics
+    weight: float = 1.0  # Optional weighting for criteria
+    performance_levels: Optional[List[PerformanceLevel]] = None  # For detailed rubrics
+
+    def to_dict(self) -> dict:
+        result = {
+            'name': self.name,
+            'description': self.description,
+            'weight': self.weight
+        }
+        if self.performance_levels:
+            result['performance_levels'] = [pl.to_dict() for pl in self.performance_levels]
+        return result
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'RubricCriterion':
+        # Handle performance levels if present
+        performance_levels = None
+        if 'performance_levels' in data and data['performance_levels']:
+            performance_levels = [PerformanceLevel.from_dict(pl) for pl in data['performance_levels']]
+
+        return cls(
+            name=data['name'],
+            description=data.get('description', ''),
+            weight=data.get('weight', 1.0),
+            performance_levels=performance_levels
+        )
 
 
 @dataclass

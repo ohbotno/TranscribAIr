@@ -13,8 +13,10 @@ A desktop application for audio transcription powered by OpenAI's Whisper model.
 
 ### AI-Powered Feedback Organization (NEW)
 - 🎯 **Custom Rubrics**: Create assessment rubrics with multiple criteria and weights
+- 📋 **Excel Import**: Import existing rubrics from Excel files with auto-format detection
+- 📊 **Multi-Level Rubrics**: Support for analytic rubrics with performance descriptors
 - 🧠 **LLM Integration**: Organize verbal feedback using AI (Ollama, OpenAI, or Anthropic)
-- 📊 **Side-by-Side View**: See transcript and organized feedback simultaneously
+- 👀 **Side-by-Side View**: See transcript and organized feedback simultaneously
 - 💾 **Multiple Export Formats**: Clipboard, Text, Markdown, PDF, and Word documents
 - ⚙️ **Flexible Settings**: Auto-organize, detail levels, and provider configuration
 - 📚 **Rubric Library**: Save and reuse rubrics across different assignments
@@ -191,8 +193,22 @@ For creating a distributable .exe file:
 **Creating a Rubric:**
 1. In Record or Upload tab, click **Select Rubric**
 2. Click **New Rubric**
-3. Add criteria with names, descriptions, and weights
-4. Save for future use (rubrics are reusable)
+3. Choose rubric type:
+   - **Simple**: Basic criteria with descriptions
+   - **Detailed**: Multi-level rubrics with performance descriptors (e.g., Poor, Good, Excellent)
+4. Add criteria with names, descriptions, and weights
+5. Save for future use (rubrics are reusable)
+
+**Importing from Excel:**
+1. Click **Import** in the rubric selector
+2. Select an Excel file (.xlsx) with your rubric
+3. Preview the detected structure
+4. Confirm to import
+5. The app automatically detects:
+   - Simple rubrics (criterion name, description, weight)
+   - Analytic rubrics (with performance levels like Poor/Good/Excellent)
+
+*Note: If openpyxl package is not installed, the app will offer to install it automatically.*
 
 **Recording and Organizing Feedback:**
 1. Select your rubric before or after recording

@@ -18,6 +18,9 @@ from ui.rubric_dialog import RubricSelectorDialog
 class FeedbackPanel(ctk.CTkFrame):
     """Panel for displaying and managing organized feedback."""
 
+    # Class variable to track all FeedbackPanel instances
+    _all_instances = []
+
     def __init__(
         self,
         parent,
@@ -39,24 +42,76 @@ class FeedbackPanel(ctk.CTkFrame):
         self._initialize_provider_dropdown()
         self._load_last_rubric()
 
+        # Register this instance
+        FeedbackPanel._all_instances.append(self)
+
     def _create_ui(self):
         """Create feedback panel UI."""
         # Header with simplified controls
         header = ctk.CTkFrame(self)
         header.pack(fill="x", padx=5, pady=5)
 
-        # Rubric info label (left side)
+        # Left side - Rubric info and word count
+        left_info = ctk.CTkFrame(header, fg_color="transparent")
+        left_info.pack(side="left", padx=10)
+
         self.rubric_label = ctk.CTkLabel(
-            header,
+            left_info,
             text="No rubric selected",
             font=ctk.CTkFont(size=12),
             text_color="gray"
         )
-        self.rubric_label.pack(side="left", padx=10)
+        self.rubric_label.pack(anchor="w")
+
+        self.word_count_label = ctk.CTkLabel(
+            left_info,
+            text="",
+            font=ctk.CTkFont(size=10),
+            text_color="gray"
+        )
+        self.word_count_label.pack(anchor="w")
 
         # Control buttons (right side)
         button_container = ctk.CTkFrame(header)
         button_container.pack(side="right", padx=10)
+
+        # Font size controls
+        font_frame = ctk.CTkFrame(button_container, fg_color="transparent")
+        font_frame.pack(side="left", padx=5)
+
+        ctk.CTkLabel(
+            font_frame,
+            text="Font:",
+            font=ctk.CTkFont(size=10)
+        ).pack(side="left", padx=2)
+
+        self.current_font_size = 12  # Default font size
+
+        self.font_decrease_btn = ctk.CTkButton(
+            font_frame,
+            text="-",
+            command=lambda: self._adjust_font_size(-1),
+            width=30,
+            height=28
+        )
+        self.font_decrease_btn.pack(side="left", padx=1)
+
+        self.font_size_label = ctk.CTkLabel(
+            font_frame,
+            text="12",
+            font=ctk.CTkFont(size=10),
+            width=25
+        )
+        self.font_size_label.pack(side="left", padx=2)
+
+        self.font_increase_btn = ctk.CTkButton(
+            font_frame,
+            text="+",
+            command=lambda: self._adjust_font_size(1),
+            width=30,
+            height=28
+        )
+        self.font_increase_btn.pack(side="left", padx=1)
 
         self.rubric_btn = ctk.CTkButton(
             button_container,
@@ -125,15 +180,21 @@ class FeedbackPanel(ctk.CTkFrame):
         )
         self.export_dropdown.pack(side="left", padx=2)
 
-        # Feedback display (scrollable) - takes most space
-        self.feedback_text = ctk.CTkTextbox(
+        # Feedback display - scrollable frame with sections
+        self.feedback_scroll = ctk.CTkScrollableFrame(
             self,
-            font=ctk.CTkFont(size=12),
-            wrap="word"
+            fg_color=("gray95", "gray20")
         )
-        self.feedback_text.pack(fill="both", expand=True, padx=5, pady=5)
-        self.feedback_text.insert("1.0", "Select a rubric and transcribe audio to organize feedback.")
-        self.feedback_text.configure(state="disabled")
+        self.feedback_scroll.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Initial placeholder
+        self.placeholder_label = ctk.CTkLabel(
+            self.feedback_scroll,
+            text="Select a rubric and transcribe audio to organize feedback.",
+            font=ctk.CTkFont(size=12),
+            text_color="gray"
+        )
+        self.placeholder_label.pack(pady=50)
 
         # Transcript drawer toggle and drawer frame
         self.transcript_visible = False
@@ -184,6 +245,65 @@ class FeedbackPanel(ctk.CTkFrame):
             "OpenRouter": "openrouter"
         }
         self.selected_provider = provider_map.get(choice, "ollama")
+
+    def _adjust_font_size(self, delta: int):
+        """Adjust feedback display font size."""
+        self.current_font_size = max(8, min(24, self.current_font_size + delta))
+        self.font_size_label.configure(text=str(self.current_font_size))
+
+        # Re-display feedback with new font size if feedback exists
+        if self.current_feedback:
+            self._display_feedback(self.current_feedback)
+
+    def _calculate_word_count(self, feedback) -> int:
+        """Calculate word count for feedback."""
+        if isinstance(feedback, OrganizedFeedback):
+            text = feedback.summary + " " + " ".join(feedback.criterion_feedback.values())
+        elif isinstance(feedback, StructuredFeedback):
+            text = feedback.feedback_text
+        else:
+            text = str(feedback)
+
+        return len(text.split())
+
+    def _copy_to_clipboard(self, text: str):
+        """Copy text to clipboard."""
+        self.clipboard_clear()
+        self.clipboard_append(text)
+        self.update()  # Required for clipboard to work
+
+    def _clean_markdown(self, text: str) -> str:
+        """Remove markdown formatting for clean display."""
+        import re
+
+        # Remove markdown headers (### Header -> Header)
+        text = re.sub(r'^#+\s+', '', text, flags=re.MULTILINE)
+
+        # Remove bold/italic markers (** or __ or *)
+        text = re.sub(r'\*\*\*(.+?)\*\*\*', r'\1', text)  # Bold+italic
+        text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)      # Bold
+        text = re.sub(r'__(.+?)__', r'\1', text)          # Bold
+        text = re.sub(r'\*(.+?)\*', r'\1', text)          # Italic
+        text = re.sub(r'_(.+?)_', r'\1', text)            # Italic
+
+        # Remove code blocks (` or ```)
+        text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+        text = re.sub(r'`(.+?)`', r'\1', text)
+
+        # Remove links [text](url) -> text
+        text = re.sub(r'\[(.+?)\]\(.+?\)', r'\1', text)
+
+        # Remove horizontal rules
+        text = re.sub(r'^-{3,}$', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^={3,}$', '', text, flags=re.MULTILINE)
+
+        # Remove blockquotes
+        text = re.sub(r'^>\s+', '', text, flags=re.MULTILINE)
+
+        # Clean up multiple blank lines
+        text = re.sub(r'\n{3,}', '\n\n', text)
+
+        return text.strip()
 
     def _toggle_transcript(self):
         """Toggle transcript drawer visibility."""
@@ -281,10 +401,25 @@ class FeedbackPanel(ctk.CTkFrame):
         # Save as last selected rubric
         self.settings_manager.update_feedback_settings(last_selected_rubric=rubric.name)
 
+        # Sync selection to all other FeedbackPanel instances
+        for instance in FeedbackPanel._all_instances:
+            if instance != self:  # Don't update self again
+                instance._sync_rubric_selection(rubric)
+
         # Auto-organize if transcript exists and auto-organize is enabled
         settings = self.settings_manager.load_settings()
         if settings.feedback.auto_organize and self.current_transcript:
             self._organize_feedback()
+
+    def _sync_rubric_selection(self, rubric: Rubric):
+        """Sync rubric selection from another FeedbackPanel instance."""
+        self.current_rubric = rubric
+        self.rubric_label.configure(
+            text=f"Rubric: {rubric.name} ({len(rubric.criteria)} criteria)",
+            text_color="white"
+        )
+        self._update_organize_button()
+        # Don't auto-organize or save to settings - that's already done by the originating panel
 
     def _organize_feedback(self):
         """Organize feedback using LLM."""
@@ -307,11 +442,8 @@ class FeedbackPanel(ctk.CTkFrame):
 
         # Disable button and show progress
         self.organize_btn.configure(state="disabled", text="Organizing...")
-        self.feedback_text.configure(state="normal")
-        self.feedback_text.delete("1.0", "end")
         provider_display = {"ollama": "Ollama", "openai": "OpenAI", "anthropic": "Anthropic"}.get(provider_name, provider_name)
-        self.feedback_text.insert("1.0", f"Organizing feedback using {provider_display}...\nThis may take a moment.")
-        self.feedback_text.configure(state="disabled")
+        self._show_message(f"Organizing feedback using {provider_display}...\nThis may take a moment.")
 
         def organize_thread():
             try:
@@ -571,21 +703,143 @@ class FeedbackPanel(ctk.CTkFrame):
             return f"❌ Failed to organize feedback.\n\n{exception_msg}"
 
     def _display_feedback(self, feedback):
-        """Display organized or structured feedback."""
-        self.feedback_text.configure(state="normal")
-        self.feedback_text.delete("1.0", "end")
+        """Display organized or structured feedback with copy buttons for each section."""
+        # Clear existing feedback display
+        for widget in self.feedback_scroll.winfo_children():
+            widget.destroy()
 
-        # Handle both OrganizedFeedback and StructuredFeedback
-        if isinstance(feedback, (OrganizedFeedback, StructuredFeedback)):
-            self.feedback_text.insert("1.0", feedback.to_markdown())
+        # Calculate and display word count
+        word_count = self._calculate_word_count(feedback)
+        self.word_count_label.configure(text=f"Word count: {word_count}")
+
+        if isinstance(feedback, OrganizedFeedback):
+            self._display_organized_feedback(feedback)
+        elif isinstance(feedback, StructuredFeedback):
+            self._display_structured_feedback(feedback)
         else:
-            self.feedback_text.insert("1.0", str(feedback))
-
-        self.feedback_text.configure(state="disabled")
+            # Fallback for unknown feedback type
+            label = ctk.CTkLabel(
+                self.feedback_scroll,
+                text=str(feedback),
+                font=ctk.CTkFont(size=self.current_font_size),
+                wraplength=900,
+                justify="left"
+            )
+            label.pack(pady=10, padx=10, anchor="w")
 
         # Enable export buttons
         self.export_btn.configure(state="normal")
         self.export_dropdown.configure(state="normal")
+
+    def _display_organized_feedback(self, feedback: OrganizedFeedback):
+        """Display organized feedback with sections and copy buttons."""
+        # Summary section
+        if feedback.summary:
+            self._create_feedback_section(
+                "Summary",
+                feedback.summary,
+                is_first=True
+            )
+
+        # Criteria sections
+        for criterion, text in feedback.criterion_feedback.items():
+            self._create_feedback_section(criterion, text)
+
+    def _display_structured_feedback(self, feedback: StructuredFeedback):
+        """Display structured feedback with sections and copy buttons."""
+        # Parse structured feedback into sections
+        # Typically has: Overall Summary, Strengths, Areas for Improvement, Closing Comment
+        lines = feedback.feedback_text.split('\n')
+
+        current_section = None
+        current_content = []
+        sections = []
+
+        for line in lines:
+            # Detect section headers (lines that start with ## or ### or are all caps)
+            if line.startswith('##') or line.startswith('###'):
+                if current_section:
+                    sections.append((current_section, '\n'.join(current_content)))
+                # Clean markdown from section title
+                current_section = line.replace('###', '').replace('##', '').strip()
+                # Remove any remaining ** markers
+                current_section = current_section.replace('**', '')
+                current_content = []
+            elif line.strip() and line.strip().isupper() and len(line.strip().split()) <= 5:
+                # All caps line (likely a header)
+                if current_section:
+                    sections.append((current_section, '\n'.join(current_content)))
+                current_section = line.strip()
+                current_content = []
+            else:
+                if line.strip():
+                    current_content.append(line)
+
+        # Add last section
+        if current_section:
+            sections.append((current_section, '\n'.join(current_content)))
+
+        # If no sections detected, treat as single block
+        if not sections:
+            self._create_feedback_section(
+                "Feedback",
+                feedback.feedback_text,
+                is_first=True
+            )
+        else:
+            # Display each section
+            for i, (section_name, section_content) in enumerate(sections):
+                self._create_feedback_section(
+                    section_name,
+                    section_content,
+                    is_first=(i == 0)
+                )
+
+    def _create_feedback_section(self, title: str, content: str, is_first: bool = False):
+        """Create a single feedback section with copy button."""
+        # Clean markdown formatting from content for display
+        clean_content = self._clean_markdown(content)
+
+        # Section container
+        section_frame = ctk.CTkFrame(
+            self.feedback_scroll,
+            fg_color=("white", "gray25"),
+            corner_radius=8
+        )
+        section_frame.pack(fill="x", padx=10, pady=(10 if is_first else 5, 5))
+
+        # Header with title and copy button
+        header_frame = ctk.CTkFrame(section_frame, fg_color="transparent")
+        header_frame.pack(fill="x", padx=10, pady=(10, 5))
+
+        title_label = ctk.CTkLabel(
+            header_frame,
+            text=title,
+            font=ctk.CTkFont(size=self.current_font_size + 2, weight="bold"),
+            anchor="w"
+        )
+        title_label.pack(side="left")
+
+        copy_btn = ctk.CTkButton(
+            header_frame,
+            text="📋 Copy",
+            command=lambda: self._copy_to_clipboard(clean_content),
+            width=80,
+            height=26,
+            font=ctk.CTkFont(size=10)
+        )
+        copy_btn.pack(side="right")
+
+        # Content text
+        content_label = ctk.CTkLabel(
+            section_frame,
+            text=clean_content,
+            font=ctk.CTkFont(size=self.current_font_size),
+            wraplength=880,
+            justify="left",
+            anchor="w"
+        )
+        content_label.pack(fill="x", padx=10, pady=(0, 10), anchor="w")
 
     def _export_feedback(self, choice: str):
         """Export feedback in selected format."""
@@ -651,21 +905,45 @@ class FeedbackPanel(ctk.CTkFrame):
         except Exception as e:
             messagebox.showerror("Error", f"Export failed: {str(e)}")
 
+    def _show_message(self, message: str):
+        """Show a message in the feedback display."""
+        # Clear existing content
+        for widget in self.feedback_scroll.winfo_children():
+            widget.destroy()
+
+        # Show message
+        label = ctk.CTkLabel(
+            self.feedback_scroll,
+            text=message,
+            font=ctk.CTkFont(size=self.current_font_size),
+            text_color="gray",
+            wraplength=800
+        )
+        label.pack(pady=50, padx=20)
+
     def _show_error(self, message: str):
         """Show error in feedback display."""
-        self.feedback_text.configure(state="normal")
-        self.feedback_text.delete("1.0", "end")
-        self.feedback_text.insert("1.0", f"❌ Error:\n\n{message}")
-        self.feedback_text.configure(state="disabled")
+        # Clear existing content
+        for widget in self.feedback_scroll.winfo_children():
+            widget.destroy()
+
+        # Show error
+        label = ctk.CTkLabel(
+            self.feedback_scroll,
+            text=f"❌ Error:\n\n{message}",
+            font=ctk.CTkFont(size=self.current_font_size),
+            text_color="red",
+            wraplength=800,
+            justify="left"
+        )
+        label.pack(pady=50, padx=20)
 
     def clear(self):
         """Clear feedback panel."""
         self.current_feedback = None
         self.current_transcript = ""
-        self.feedback_text.configure(state="normal")
-        self.feedback_text.delete("1.0", "end")
-        self.feedback_text.insert("1.0", "Select a rubric and transcribe audio to organize feedback.")
-        self.feedback_text.configure(state="disabled")
+        self._show_message("Select a rubric and transcribe audio to organize feedback.")
+        self.word_count_label.configure(text="")
         self.export_btn.configure(state="disabled")
         self.export_dropdown.configure(state="disabled")
         self.transcript_toggle_btn.configure(state="disabled")
