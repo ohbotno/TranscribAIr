@@ -1,6 +1,6 @@
 # TranscribAIr
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/TranscribAIr/releases)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/otherworld-dev/TranscribAIr/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 
@@ -34,7 +34,7 @@ A desktop application for audio transcription powered by OpenAI's Whisper model.
 
 ### 🎁 Windows Installer (Easiest for End Users)
 
-**Download the pre-built installer from [GitHub Releases](https://github.com/yourusername/TranscribAIr/releases)**
+**Download the pre-built installer from [GitHub Releases](https://github.com/otherworld-dev/TranscribAIr/releases)**
 
 1. Download `TranscribAIr-1.0.0-Setup.exe`
 2. Run the installer
@@ -119,7 +119,7 @@ Install TranscribAIr as a Python package:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/TranscribAIr.git
+git clone https://github.com/otherworld-dev/TranscribAIr.git
 cd TranscribAIr
 
 # Install with pip (creates 'transcribair' command)
@@ -147,7 +147,7 @@ If you prefer manual dependency installation:
 
 2. **Clone or download this repository**
    ```bash
-   git clone https://github.com/yourusername/TranscribAIr.git
+   git clone https://github.com/otherworld-dev/TranscribAIr.git
    cd TranscribAIr
    ```
 
@@ -453,6 +453,6 @@ Copyright © 2025 Swansea University
 
 ## Support
 
-- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/yourusername/TranscribAIr/issues)
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/otherworld-dev/TranscribAIr/issues)
 - **Documentation**: See [README](README.md), [QUICKSTART](QUICKSTART.md), and [CONTRIBUTING](CONTRIBUTING.md)
-- **Releases**: Download latest version from [GitHub Releases](https://github.com/yourusername/TranscribAIr/releases)
+- **Releases**: Download latest version from [GitHub Releases](https://github.com/otherworld-dev/TranscribAIr/releases)

@@ -27,7 +27,7 @@ This project follows standard open-source community guidelines. Please be respec
 
 ### Finding Issues
 
-- Check the [GitHub Issues](https://github.com/yourusername/TranscribAIr/issues) page
+- Check the [GitHub Issues](https://github.com/otherworld-dev/TranscribAIr/issues) page
 - Look for issues tagged with `good first issue` or `help wanted`
 - Comment on an issue before starting work to avoid duplication
 
@@ -37,7 +37,7 @@ This project follows standard open-source community guidelines. Please be respec
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/TranscribAIr.git
+   git clone https://github.com/otherworld-dev/TranscribAIr.git
    cd TranscribAIr
    ```
 
@@ -305,7 +305,7 @@ Requires [Inno Setup](https://jrsoftware.org/isinfo.php):
 ## Getting Help
 
 - **Documentation**: Check the [README](README.md) and [QUICKSTART](QUICKSTART.md)
-- **Issues**: Search existing [GitHub Issues](https://github.com/yourusername/TranscribAIr/issues)
+- **Issues**: Search existing [GitHub Issues](https://github.com/otherworld-dev/TranscribAIr/issues)
 - **Questions**: Open a new issue with the `question` label
 
 ## License

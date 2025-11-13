@@ -11,7 +11,7 @@
 #define MyAppName "TranscribAIr"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Swansea University"
-#define MyAppURL "https://github.com/yourusername/TranscribAIr"
+#define MyAppURL "https://github.com/otherworld-dev/TranscribAIr"
 #define MyAppExeName "Transcribair.exe"
 #define MyAppDescription "AI-powered audio transcription and feedback organization tool"
 

@@ -68,11 +68,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/TranscribAIr"
-Documentation = "https://github.com/yourusername/TranscribAIr#readme"
-Repository = "https://github.com/yourusername/TranscribAIr"
-Issues = "https://github.com/yourusername/TranscribAIr/issues"
-Changelog = "https://github.com/yourusername/TranscribAIr/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/otherworld-dev/TranscribAIr"
+Documentation = "https://github.com/otherworld-dev/TranscribAIr#readme"
+Repository = "https://github.com/otherworld-dev/TranscribAIr"
+Issues = "https://github.com/otherworld-dev/TranscribAIr/issues"
+Changelog = "https://github.com/otherworld-dev/TranscribAIr/blob/main/CHANGELOG.md"
 
 [project.scripts]
 transcribair = "app:main"
